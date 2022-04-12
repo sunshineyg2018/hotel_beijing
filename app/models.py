@@ -12,10 +12,8 @@ class BaseModel(models.Model):
         abstract = True
 
 
-def user_directory_path(instance, filename):
-    ext = filename.split('.').pop()
-    filename = '{0}{1}.{2}'.format(instance.name, instance.identity_card, ext)
-    return os.path.join(instance.major.name, filename)
+def user_directory_path(instance,filename):
+    return os.path.join(filename)
 
 
 class Hotel(BaseModel):
@@ -24,6 +22,7 @@ class Hotel(BaseModel):
     decs = models.TextField(verbose_name="酒店简介")
     phone = models.CharField(max_length=20,verbose_name="联系电话")
     address = models.CharField(max_length=200,verbose_name="酒店地址")
+    city = models.CharField(max_length=20,verbose_name="酒店所在城市")
 
     class Meta:
         verbose_name = '添加新的酒店'
@@ -33,7 +32,7 @@ class Hotel(BaseModel):
 class Room(BaseModel):
     room_name = models.CharField(max_length=20, verbose_name="房型名称")
     room_price = models.CharField(max_length=10, verbose_name="房型价格")
-    hotel = models.OneToOneField(Hotel, on_delete=models.CASCADE, verbose_name="对应酒店")
+    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, verbose_name="对应酒店")
     room_mian_img = models.ImageField(upload_to=user_directory_path, verbose_name="房型主图")
     room_num = models.IntegerField(verbose_name="房间总数")
     room_reservation = models.IntegerField(verbose_name="已预定数")
