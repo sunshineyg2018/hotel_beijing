@@ -14,8 +14,8 @@ def get_img(request):
 
 class HotList(View):
     def get(self, request):
-        page = request.GET.get("page", 1)
-        page_size = request.GET.get("page_size", 5)
+        page = int(request.GET.get("page", 1))
+        page_size = int(request.GET.get("page_size", 5))
         city = request.GET.get('city')
 
         reservation_time = request.GET.get('reservation_time')  # 预定时间
@@ -41,7 +41,7 @@ class HotList(View):
             ret = {
                 "hotel_name": i.hotel_name,
                 "desc": i.decs,
-                "hotel_img": str(i.hotel_mian_img),
+                "hotel_img": "https://hotel.buerclub.com/get_hotel_img?image_path={}".format(i.hotel_mian_img),
                 "hotel_id": i.id
             }
             ret_list.append(ret)
@@ -74,6 +74,7 @@ class HotelDetail(View):
         room_ret_list = list()
         for i in room_obj:
             room_ret_obj = {
+                "room_id":i.id,
                 "room_name": i.room_name,
                 "room_num": i.room_num,
                 "room_img": str(i.room_mian_img),
