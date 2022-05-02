@@ -15,7 +15,7 @@ class BaseModel(models.Model):
 class User(BaseModel):
     user_name = models.CharField(max_length=20, verbose_name="应用名称", null=True)
     wx_nickName = models.CharField(max_length=20, verbose_name="微信名称")
-    wx_openId = models.CharField(max_length=100, verbose_name="微信id")
+    wx_openId = models.CharField(max_length=100,unique=True,verbose_name="微信id")
     wx_portrait = models.TextField(verbose_name="微信头像")
     token = models.CharField(max_length=200, verbose_name="用户token",null=True)
 

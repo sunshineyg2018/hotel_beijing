@@ -4,17 +4,35 @@ import base64
 import hmac
 import uuid
 
+import django
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import View
 from dwebsocket import accept_websocket
+from django.views.decorators.csrf import csrf_exempt
 
 from tool import ret_code
-from user.models import User
-
+from user.models import User, Market
+token_key = "BEJjjs2022"
 clients = {}
 artificial_clients = []
 artificial_customer_service_dict = {}
+
+
+def certify_token(key, token):
+    token_str = base64.urlsafe_b64decode(token).decode('utf-8')
+    token_list = token_str.split(':')
+    if len(token_list) < 2:
+        return False
+    time_str = token_list[0]
+    if float(time_str) < time.time():
+        return False
+    known_sha1_tsstr = token_list[1]
+    sha1 = hmac.new(key.encode("utf-8"), time_str.encode('utf-8'), 'sha1')
+    calc_sha1_tsstr = sha1.hexdigest()
+    if calc_sha1_tsstr != known_sha1_tsstr:
+        return False
+    return True
 
 
 def generate_token(key, expire=3600):
@@ -27,21 +45,26 @@ def generate_token(key, expire=3600):
 
 
 class AddUser(View):
+    @csrf_exempt
     def post(self, request):
-        user_obj = User()
-        nickName = request.POST.get('nickName')
-        wx_openId = request.POST.get("openId")
-        wx_portrait = request.POST.get("wx_portrait")
-        user_obj.wx_nickName = nickName
-        user_obj.wx_openId = wx_openId
-        user_obj.wx_portrait = wx_portrait
-        token = generate_token(str(user_obj.id))
-        User.objects.filter(id=user_obj.id).update(token=token)
-        return JsonResponse(ret_code(200, data=token))
-
-
-class Login(View):
-    pass
+        json_body = json.loads(request.body)
+        try:
+            user_obj = User()
+            nickName = json_body.get('nickName')
+            wx_openId = json_body.get("openId")
+            wx_portrait = json_body.get("wx_portrait")
+            user_obj.wx_nickName = nickName
+            user_obj.wx_openId = wx_openId
+            user_obj.wx_portrait = wx_portrait
+            user_obj.save()
+            token = generate_token(token_key)
+            User.objects.filter(id=user_obj.id).update(token=token)
+            return JsonResponse(ret_code(200, data=token))
+        except django.db.utils.IntegrityError:
+            openId = User.objects.filter(wx_openId=json_body.get("openId")).first()
+            token = generate_token(token_key)
+            User.objects.filter(id=openId.id).update(token=token)
+            return JsonResponse(ret_code(203, data=token))
 
 
 @accept_websocket
@@ -78,7 +101,8 @@ def WsService(request):
                     if service_code:
                         clients[userid].send("当前客户数已达到最大服务数量。请稍后再试～".encode("'utf-8'"))
             elif artificial_customer_service:
-                artificial_customer_service_dict[userid].send(json.dumps({"msg":message,"id":userid}).encode("'utf-8'"))
+                artificial_customer_service_dict[userid].send(
+                    json.dumps({"msg": message, "id": userid}).encode("'utf-8'"))
             else:
                 pass
 
@@ -90,15 +114,28 @@ def WsSendAll(request):
             message = request.websocket.wait()
             message = str(message, encoding="utf-8")
             if message == "小杨":
-                artificial_clients.append({"id":str(uuid.uuid1()),"num":0,"name":"小杨",
-                                           "client":request.websocket,"people":[]})
+                artificial_clients.append({"id": str(uuid.uuid1()), "num": 0, "name": "小杨",
+                                           "client": request.websocket, "people": []})
             elif message.startswith("h"):
                 send_data = message.split("|")
-                send_user,send_data = send_data[1],send_data[2]
+                send_user, send_data = send_data[1], send_data[2]
                 clients[send_user].send(send_data.encode("'utf-8'"))
 
 
-
-
-
-
+class Order(View):
+    def post(self, request):
+        try:
+            json_body = json.loads(request.body)
+            room_id = json_body.get("room_id")
+            token = json_body.get("token")
+            if certify_token(token_key,token):
+                user_obj = User.objects.filter(token=token).first()
+                market_obj = Market()
+                market_obj.room_id = room_id
+                market_obj.user = user_obj.id
+                market_obj.save()
+                return JsonResponse(ret_code(205))
+            else:
+                return JsonResponse(ret_code(204))
+        except Exception as e:
+            return JsonResponse(ret_code(206,data=str(e)))
