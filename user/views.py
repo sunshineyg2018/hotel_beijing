@@ -53,19 +53,25 @@ class AddUser(View):
             user_obj = User()
             nickName = json_body.get('nickName')
             code = json_body.get("code")
+            print(code)
             wx_portrait = json_body.get("wx_portrait")
+            token = generate_token(token_key)
 
-            APPID = "wx3c85cc30cf14f728"
-            SECRET = "1e77684d1e3ef3e94c74a25601827505"
-            url = f"https://api.weixin.qq.com/sns/jscode2session?appid={APPID}&secret={SECRET}&js_code={code}&grant_type=authorization_code"
-            data = rq.get(url)
-            if data.json().get("openid") is not None:
-                user_obj.wx_nickName = nickName
-                user_obj.wx_openId = data.json().get("openid")
-                user_obj.wx_portrait = wx_portrait
-                user_obj.save()
-                token = generate_token(token_key)
-                User.objects.filter(id=user_obj.id).update(token=token)
+            # APPID = "wx3c85cc30cf14f728"
+            # SECRET = "1e77684d1e3ef3e94c74a25601827505"
+            # url = f"https://api.weixin.qq.com/sns/jscode2session?appid={APPID}&secret={SECRET}&js_code={code}&grant_type=authorization_code"
+            # data = rq.get(url)
+            if code is not None:
+                is_user = User.objects.filter(wx_openId=code).first()
+                if is_user is None:
+                    user_obj.wx_nickName = nickName
+                    user_obj.wx_openId = code
+                    user_obj.wx_portrait = wx_portrait
+                    user_obj.save()
+                    User.objects.filter(id=user_obj.id).update(token=token)
+                else:
+                    is_user.token = token
+                    is_user.save()
                 return JsonResponse(ret_code(200, data=token))
             else:
                 return JsonResponse(ret_code(207))
