@@ -3,8 +3,9 @@ import time
 import base64
 import hmac
 import uuid
-
+import requests
 import django
+from django.contrib.sites import requests
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import View
@@ -51,15 +52,23 @@ class AddUser(View):
         try:
             user_obj = User()
             nickName = json_body.get('nickName')
-            wx_openId = json_body.get("openId")
+            code = json_body.get("code")
             wx_portrait = json_body.get("wx_portrait")
-            user_obj.wx_nickName = nickName
-            user_obj.wx_openId = wx_openId
-            user_obj.wx_portrait = wx_portrait
-            user_obj.save()
-            token = generate_token(token_key)
-            User.objects.filter(id=user_obj.id).update(token=token)
-            return JsonResponse(ret_code(200, data=token))
+
+            APPID = "wx3c85cc30cf14f728"
+            SECRET = "1e77684d1e3ef3e94c74a25601827505"
+            url = f"https://api.weixin.qq.com/sns/jscode2session?appid={APPID}&secret={SECRET}&js_code={code}&grant_type=authorization_code"
+            data = requests.get(url)
+            if data.json().get("openid") is not None:
+                user_obj.wx_nickName = nickName
+                user_obj.wx_openId = data.json().get("openid")
+                user_obj.wx_portrait = wx_portrait
+                user_obj.save()
+                token = generate_token(token_key)
+                User.objects.filter(id=user_obj.id).update(token=token)
+                return JsonResponse(ret_code(200, data=token))
+            else:
+                return JsonResponse(ret_code(207))
         except django.db.utils.IntegrityError:
             openId = User.objects.filter(wx_openId=json_body.get("openId")).first()
             token = generate_token(token_key)

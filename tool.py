@@ -14,7 +14,8 @@ def ret_code(code,**kwargs):
         203:"用户已注册",
         204:"登录已失效,请重新登录",
         205:"下单成功",
-        206:"下单失败"
+        206:"下单失败",
+        207:"登录失败"
     }
     status = "successful" if code in [200] else "failed"
     ret = {
