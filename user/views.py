@@ -3,7 +3,7 @@ import time
 import base64
 import hmac
 import uuid
-import requests
+import requests as rq
 import django
 from django.contrib.sites import requests
 from django.http import JsonResponse
@@ -58,7 +58,7 @@ class AddUser(View):
             APPID = "wx3c85cc30cf14f728"
             SECRET = "1e77684d1e3ef3e94c74a25601827505"
             url = f"https://api.weixin.qq.com/sns/jscode2session?appid={APPID}&secret={SECRET}&js_code={code}&grant_type=authorization_code"
-            data = requests.get(url)
+            data = rq.get(url)
             if data.json().get("openid") is not None:
                 user_obj.wx_nickName = nickName
                 user_obj.wx_openId = data.json().get("openid")
