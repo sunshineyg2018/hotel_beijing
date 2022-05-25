@@ -12,8 +12,10 @@ from django.views import View
 from dwebsocket import accept_websocket
 from django.views.decorators.csrf import csrf_exempt
 
+from app.models import Room
 from tool import ret_code
-from user.models import User, Market
+from user.models import User, Market, advertising
+
 token_key = "BEJjjs2022"
 clients = {}
 artificial_clients = []
@@ -59,6 +61,7 @@ class AddUser(View):
             APPID = "wx3c85cc30cf14f728"
             SECRET = "1e77684d1e3ef3e94c74a25601827505"
             url = f"https://api.weixin.qq.com/sns/jscode2session?appid={APPID}&secret={SECRET}&js_code={code}&grant_type=authorization_code"
+            print(code)
             data = rq.get(url)
             if data.json().get("openid") is not None:
                 is_user = User.objects.filter(wx_openId=code).first()
@@ -142,7 +145,11 @@ class Order(View):
             json_body = json.loads(request.body)
             room_id = json_body.get("room_id")
             token = json_body.get("token")
-            if certify_token(token_key,token):
+            name = json_body.get("name")
+            phone = json_body.get("phone")
+            if name is None or phone is None:
+                return JsonResponse(ret_code(201))
+            if certify_token(token_key, token):
                 user_obj = User.objects.filter(token=token).first()
                 market_obj = Market()
                 market_obj.room_id = room_id
@@ -152,4 +159,38 @@ class Order(View):
             else:
                 return JsonResponse(ret_code(204))
         except Exception as e:
-            return JsonResponse(ret_code(206,data=str(e)))
+            return JsonResponse(ret_code(206, data=str(e)))
+
+
+class Banner(View):
+    def get(self, request):
+        url = advertising.objects.order_by("-created_time").first()
+        ret = {
+            "hotel_img": "https://hotel.buerclub.com/get_hotel_img?image_path={}".format(url),
+        }
+        return JsonResponse(ret_code(200, data=ret))
+
+
+class Reservation(View):
+    def get(self, request):
+
+        token = request.GET.get("token")
+        if token:
+            user_obj = User.objects.filter(token=token).first()
+            reservation = Market.objects.filter(user=user_obj.id).all()
+            room_dict = {}
+            room_list = []
+            for n in reservation:
+                room_dict[n.room_id] = n.created_time.strftime("%Y-%m-%d, %H:%M:%S")
+                room_list.append(n.room_id)
+            room_obj = Room.objects.filter(id__in=room_list).all()
+            ret_list = []
+            for i in room_obj:
+                ret = {"name": i.hotel.hotel_name,
+                       "create_time":room_dict[str(i.id)],
+                       "status":0
+                       }
+                ret_list.append(ret)
+            return JsonResponse(ret_code(200, data=ret_list))
+        else:
+            return JsonResponse(ret_code(204))

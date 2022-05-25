@@ -2,6 +2,7 @@ from django.db import models
 
 
 # Create your models here.
+from app.models import user_directory_path
 
 
 class BaseModel(models.Model):
@@ -31,3 +32,8 @@ class Market(BaseModel):
     class Meta:
         verbose_name = '市场表'
         verbose_name_plural = verbose_name
+
+
+class advertising(BaseModel):
+    img = models.ImageField(upload_to=user_directory_path, verbose_name="广告位")
+
