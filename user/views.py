@@ -61,13 +61,13 @@ class AddUser(View):
             APPID = "wx3c85cc30cf14f728"
             SECRET = "1e77684d1e3ef3e94c74a25601827505"
             url = f"https://api.weixin.qq.com/sns/jscode2session?appid={APPID}&secret={SECRET}&js_code={code}&grant_type=authorization_code"
-            print(code)
             data = rq.get(url)
-            if data.json().get("openid") is not None:
-                is_user = User.objects.filter(wx_openId=code).first()
+            wx_openId = data.json().get("openid")
+            if wx_openId is not None:
+                is_user = User.objects.filter(wx_openId=wx_openId).first()
                 if is_user is None:
                     user_obj.wx_nickName = nickName
-                    user_obj.wx_openId = code
+                    user_obj.wx_openId = wx_openId
                     user_obj.wx_portrait = wx_portrait
                     user_obj.token = token
                     user_obj.save()
