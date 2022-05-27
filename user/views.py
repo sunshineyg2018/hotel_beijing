@@ -25,6 +25,7 @@ artificial_customer_service_dict = {}
 def certify_token(key, token):
     token_str = base64.urlsafe_b64decode(token).decode('utf-8')
     token_list = token_str.split(':')
+    print(token_list)
     if len(token_list) < 2:
         return False
     time_str = token_list[0]
@@ -164,9 +165,12 @@ class Order(View):
 
 class Banner(View):
     def get(self, request):
-        url = advertising.objects.order_by("-created_time").first()
+        url = advertising.objects.order_by("-created_time")[:3]
+        img = []
+        for i in url:
+            img.append("https://hotel.buerclub.com/get_hotel_img?image_path={}".format(i.img))
         ret = {
-            "hotel_img": "https://hotel.buerclub.com/get_hotel_img?image_path={}".format(url),
+            "hotel_img": img
         }
         return JsonResponse(ret_code(200, data=ret))
 
@@ -175,7 +179,7 @@ class Reservation(View):
     def get(self, request):
 
         token = request.GET.get("token")
-        if token:
+        if certify_token(token_key, token):
             user_obj = User.objects.filter(token=token).first()
             reservation = Market.objects.filter(user=user_obj.id).all()
             room_dict = {}

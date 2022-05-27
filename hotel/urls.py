@@ -16,11 +16,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-from app.views import get_img
+from app.views import get_img, auto_token
 
 urlpatterns = [
     path('buerjiaadmin/', admin.site.urls),
     path('get_hotel_img/',get_img),
+    path('auto/token',auto_token),
     path('v1/hotel/', include(('app.urls', 'app'), namespace='hotel')),
     path('v1/user/',include(('user.urls','user'),namespace='user')),
 ]

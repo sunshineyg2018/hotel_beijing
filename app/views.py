@@ -5,11 +5,26 @@ from app.models import Hotel, Room
 from tool import ret_code
 import os
 
+from user.models import User
+from user.views import certify_token, token_key
+
 
 def get_img(request):
     image_path = request.GET.get('image_path')
     image_data = open(os.path.join(os.path.abspath('.'), "upload", image_path), "rb").read()
     return HttpResponse(image_data, content_type="image/png")
+
+
+def auto_token(request):
+    token = request.GET.get('token')
+    user_obj = User.objects.filter(token=token).first()
+    if user_obj is None:
+        return JsonResponse(ret_code(204))
+    else:
+        if certify_token(token_key, token):
+            return JsonResponse(ret_code(200))
+        else:
+            return JsonResponse(ret_code(204))
 
 
 class HotList(View):
@@ -48,6 +63,9 @@ class HotList(View):
         ret_dict["data"] = ret_list
         ret_dict['total'] = len(hotel_obj)
 
+        print(ret_dict)
+        print(city)
+
         return JsonResponse(ret_code(200, data=ret_dict))
 
 
@@ -63,7 +81,7 @@ class HotelDetail(View):
         ret = dict()
         hotel_ret_obj = {
             "hotel_name": hotel_obj.hotel_name,
-            "hotel_img": str(hotel_obj.hotel_mian_img),
+            "hotel_img": "https://hotel.buerclub.com/get_hotel_img?image_path={}".format(str(hotel_obj.hotel_mian_img)),
             "phone": hotel_obj.phone,
             "address": hotel_obj.address
         }
