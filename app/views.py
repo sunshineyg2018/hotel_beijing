@@ -96,7 +96,7 @@ class HotelDetail(View):
                 "room_id":i.id,
                 "room_name": i.room_name,
                 "room_num": i.room_num,
-                "room_img": str(i.room_mian_img),
+                "room_img": "https://hotel.buerclub.com/get_hotel_img?image_path={}".format(str(i.room_mian_img)),
                 "room_price": i.room_price,
                 "note": i.note
             }
