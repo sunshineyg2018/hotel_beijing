@@ -32,6 +32,7 @@ class HotList(View):
         page = int(request.GET.get("page", 1))
         page_size = int(request.GET.get("page_size", 5))
         city = request.GET.get('city')
+        city = None
 
         reservation_time = request.GET.get('reservation_time')  # 预定时间
         room_num = request.GET.get('room_num')
@@ -41,7 +42,7 @@ class HotList(View):
 
         q = Q()
         if city is not None:
-            q &= Q(city=city)
+            q &= Q(hotel_region=city)
 
         start = (page - 1) * page_size  # 页码数据开头的索引
         end = page * page_size  # 页码数据结尾的索引

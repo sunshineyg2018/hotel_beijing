@@ -23,6 +23,7 @@ class Hotel(BaseModel):
     phone = models.CharField(max_length=20,verbose_name="联系电话")
     address = models.CharField(max_length=200,verbose_name="酒店地址")
     city = models.CharField(max_length=20,verbose_name="酒店所在城市")
+    hotel_region = models.CharField(max_length=50,verbose_name="地区详情",default="")
 
     class Meta:
         verbose_name = '添加新的酒店'
